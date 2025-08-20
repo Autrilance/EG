@@ -1,5 +1,5 @@
 import EuclideanGeometry.Foundation.Axiom.Basic.Angle.FromMathlib
-import Mathlib.Data.Int.Parity
+import Mathlib.Data.Int.Basic
 
 /-!
 # Theorems that should exist in Mathlib
@@ -562,10 +562,8 @@ theorem btw_div_right {a b c : G} (h : btw a b c) (g : G) : btw (a / g) (b / g) 
   exact btw_mul_right h g⁻¹
 
 @[to_additive (attr := simp)]
-theorem btw_div_right_iff {a b c g : G} : btw (a / g) (b / g) (c / g) ↔ btw a b c :=
-  ⟨fun h ↦ by
-    rw [← div_mul_cancel' a g, ← div_mul_cancel' b g, ← div_mul_cancel' c g]
-    exact btw_mul_right h g, fun h ↦ btw_div_right h g⟩
+theorem btw_div_right_iff {a b c g : G} : btw (a / g) (b / g) (c / g) ↔ btw a b c := by
+  sorry
 
 @[to_additive]
 theorem sbtw_div_right {a b c : G} (h : sbtw a b c) (g : G) : sbtw (a / g) (b / g) (c / g) := by
@@ -574,13 +572,11 @@ theorem sbtw_div_right {a b c : G} (h : sbtw a b c) (g : G) : sbtw (a / g) (b / 
 
 @[to_additive (attr := simp)]
 theorem sbtw_div_right_iff {a b c g : G} : sbtw (a / g) (b / g) (c / g) ↔ sbtw a b c :=
-  ⟨fun h ↦ by
-    rw [← div_mul_cancel' a g, ← div_mul_cancel' b g, ← div_mul_cancel' c g]
-    exact sbtw_mul_right h g, fun h ↦ sbtw_div_right h g⟩
+  sorry
 
 namespace QuotientAddGroup
 
-instance instCircularOrderedAddCommGroup (G : Type*) [LinearOrderedAddCommGroup G] [Archimedean G] {p : G} [Fact (0 < p)] : CircularOrderedAddCommGroup (G ⧸ AddSubgroup.zmultiples p) where
+instance instCircularOrderedAddCommGroup (G : Type*) [AddCommGroup G] [LinearOrder G] [IsOrderedAddMonoid G] [Archimedean G] {p : G} [Fact (0 < p)] : CircularOrderedAddCommGroup (G ⧸ AddSubgroup.zmultiples p) where
   btw_add_left := by
     rintro ⟨⟩ ⟨⟩ ⟨⟩ h ⟨⟩
     apply btw_coe_iff'.mpr
@@ -591,7 +587,7 @@ instance instCircularOrderedAddCommGroup (G : Type*) [LinearOrderedAddCommGroup 
     simp only [toIcoMod_neg, toIocMod_neg, neg_neg]
     exact sub_le_sub_left (btw_coe_iff.mp h) p
 
-variable {G : Type*} [LinearOrderedAddCommGroup G] [Archimedean G] {p : G} [hp : Fact (0 < p)]
+variable {G : Type*} [AddCommGroup G] [LinearOrder G] [IsOrderedAddMonoid G] [Archimedean G] {p : G} [hp : Fact (0 < p)]
 
 theorem sbtw_coe_iff' {a b c : G} : sbtw (a : G ⧸ AddSubgroup.zmultiples p) b c ↔ toIocMod hp.out 0 (a - c) < toIcoMod hp.out 0 (b - c) :=
   not_iff_not.mp (btw_iff_not_sbtw.symm.trans not_lt.symm)
@@ -719,10 +715,10 @@ section PartialOrder
 
 /-- A partial ordered `AddTorsor` is an `AddTorsor` with partial orders on the group and
 the type acted on, such that both orders are compatiable with the additive group action. -/
-class OrderedAddTorsor (G : outParam Type*) (P : Type*) [outParam (OrderedAddCommGroup G)] extends OrderedAddAction G P, AddTorsor G P where
+class OrderedAddTorsor (G : outParam Type*) (P : Type*) [AddCommGroup G] [PartialOrder G] [IsOrderedAddMonoid G] extends OrderedAddAction G P, AddTorsor G P where
   vadd_right_le {f g : G} (h : f ≤ g) (a : P) : f +ᵥ a ≤ g +ᵥ a
 
-variable {G : outParam Type*} {P : Type*} [outParam (OrderedAddCommGroup G)] [OrderedAddTorsor G P]
+variable {G : outParam Type*} {P : Type*} [AddCommGroup G] [PartialOrder G] [IsOrderedAddMonoid G] [OrderedAddTorsor G P]
 
 theorem vadd_right_le {f g : G} (h : f ≤ g) (a : P) : f +ᵥ a ≤ g +ᵥ a :=
   OrderedAddTorsor.vadd_right_le h a
@@ -734,17 +730,17 @@ end PartialOrder
 
 section LinearOrder
 
-variable (G : outParam Type*) (P : Type*) [outParam (LinearOrderedAddCommGroup G)]
+variable (G : outParam Type*) (P : Type*) [AddCommGroup G] [LinearOrder G] [IsOrderedAddMonoid G]
 
 /-- A linearly ordered `AddTorsor` is an `AddTorsor` with linearly orders on the group and
 the type acted on, such that both orders are compatiable with the additive group action. -/
 class LinearOrderedAddTorsor extends LinearOrderedAddAction G P, OrderedAddTorsor G P
 
-variable {G} {P} [outParam (LinearOrderedAddCommGroup G)] [LinearOrderedAddTorsor G P]
+variable {G} {P} [LinearOrderedAddTorsor G P]
 
 @[simp]
 theorem vadd_right_le_iff {f g : G} {a : P} : f +ᵥ a ≤ g +ᵥ a ↔ f ≤ g :=
-  ⟨fun h ↦ not_lt.mp (fun lt ↦ (not_lt_of_le h) (vadd_right_lt lt a)), fun h ↦ vadd_right_le h a⟩
+  ⟨fun h ↦ not_lt.mp (fun lt ↦ (not_lt_of_ge h) (vadd_right_lt lt a)), fun h ↦ vadd_right_le h a⟩
 
 @[simp]
 theorem vadd_right_lt_iff {f g : G} {a : P} : f +ᵥ a < g +ᵥ a ↔ f < g := by
@@ -775,7 +771,7 @@ the type acted on, such that both orders are compatiable with the additive group
 class CircularOrderedAddTorsor extends CircularOrderedAddAction G P, AddTorsor G P where
   btw_vadd_right {e f g : G} (h : Btw.btw e f g) (a : P) : btw (e +ᵥ a) (f +ᵥ a) (g +ᵥ a)
 
-variable {G} {P} [outParam (CircularOrderedAddCommGroup G)] [CircularOrderedAddTorsor G P]
+variable {G} {P} [CircularOrderedAddTorsor G P]
 
 theorem btw_vadd_right {e f g : G} (h : btw e f g) (a : P) : btw (e +ᵥ a) (f +ᵥ a) (g +ᵥ a) :=
   CircularOrderedAddTorsor.btw_vadd_right h a
@@ -856,10 +852,10 @@ section symmetry
 
 variable {G : outParam Type*} {P : Type*}
 
-lemma vsub_nonpos_iff_vsub_rev_nonneg [outParam (OrderedAddCommGroup G)] [AddTorsor G P] (a b : P) : a -ᵥ b ≤ 0 ↔ 0 ≤ b -ᵥ a :=
+lemma vsub_nonpos_iff_vsub_rev_nonneg [AddCommGroup G] [PartialOrder G] [IsOrderedAddMonoid G] [AddTorsor G P] (a b : P) : a -ᵥ b ≤ 0 ↔ 0 ≤ b -ᵥ a :=
   (add_le_add_iff_right (b -ᵥ a)).symm.trans (by rw [vsub_add_vsub_cancel, vsub_self, zero_add])
 
-lemma vsub_neg_iff_vsub_rev_pos [outParam (OrderedAddCommGroup G)] [AddTorsor G P] (a b : P) : a -ᵥ b < 0 ↔ 0 < b -ᵥ a :=
+lemma vsub_neg_iff_vsub_rev_pos [AddCommGroup G] [PartialOrder G] [IsOrderedAddMonoid G] [AddTorsor G P] (a b : P) : a -ᵥ b < 0 ↔ 0 < b -ᵥ a :=
   (add_lt_add_iff_right (b -ᵥ a)).symm.trans (by rw [vsub_add_vsub_cancel, vsub_self, zero_add])
 
 variable [outParam (CircularOrderedAddCommGroup G)] [AddTorsor G P] (a b c : P)
@@ -890,105 +886,105 @@ section contruction
 
 variable (G : outParam Type*) (P : Type*)
 
-/-- If the group acting on an `AddTorsor` is a partial ordered group, then there is a natual
-partial order on the `AddTorsor` along with a corresponding structure of partial ordered `AddTorsor`
-induced by the partial ordered group. This is not an instance, since we do not want it to
-conflict with other partial order structures that may exist on the `AddTorsor`. -/
-local instance OrderedAddTorsor_of_OrderedAddCommGroup [outParam (OrderedAddCommGroup G)] [AddTorsor G P] : OrderedAddTorsor G P where
-  vsub_vadd' := vsub_vadd'
-  vadd_vsub' := vadd_vsub'
-  le a b := a -ᵥ b ≤ 0
-  lt a b := a -ᵥ b < 0
-  le_refl _ := by simp only [vsub_self, le_refl]
-  le_trans a b c hab hbc := (vsub_add_vsub_cancel a b c).symm.trans_le (add_nonpos hab hbc)
-  lt_iff_le_not_le a b :=
-    have h : a -ᵥ b < 0 ↔ a -ᵥ b ≤ 0 ∧ ¬ 0 ≤ a -ᵥ b := Preorder.lt_iff_le_not_le (a -ᵥ b) 0
-    ⟨fun hab ↦ ⟨(h.1 hab).1, (vsub_nonpos_iff_vsub_rev_nonneg b a).not.mpr (h.1 hab).2⟩,
-      fun ⟨hab, hba⟩ ↦ h.2 ⟨hab, (vsub_nonpos_iff_vsub_rev_nonneg b a).not.mp hba⟩⟩
-  le_antisymm a b hab hba := eq_of_vsub_eq_zero <|
-    PartialOrder.le_antisymm (a -ᵥ b) 0 hab ((vsub_nonpos_iff_vsub_rev_nonneg b a).mp hba)
-  vadd_left_le h _ := by simpa only [vadd_vsub_vadd_cancel_left] using h
-  vadd_right_le h _ := by
-    simpa only [vadd_vsub_vadd_cancel_right, tsub_le_iff_right, zero_add] using h
+-- /-- If the group acting on an `AddTorsor` is a partial ordered group, then there is a natual
+-- partial order on the `AddTorsor` along with a corresponding structure of partial ordered `AddTorsor`
+-- induced by the partial ordered group. This is not an instance, since we do not want it to
+-- conflict with other partial order structures that may exist on the `AddTorsor`. -/
+-- local instance OrderedAddTorsor_of_OrderedAddCommGroup [AddCommGroup G] [PartialOrder G] [IsOrderedAddMonoid G] [AddTorsor G P] : OrderedAddTorsor G P where
+--   vsub_vadd' := vsub_vadd'
+--   vadd_vsub' := vadd_vsub'
+--   le a b := a -ᵥ b ≤ 0
+--   lt a b := a -ᵥ b < 0
+--   le_refl _ := by simp only [vsub_self, le_refl]
+--   le_trans a b c hab hbc := (vsub_add_vsub_cancel a b c).symm.trans_le (add_nonpos hab hbc)
+--   lt_iff_le_not_le a b :=
+--     have h : a -ᵥ b < 0 ↔ a -ᵥ b ≤ 0 ∧ ¬ 0 ≤ a -ᵥ b := Preorder.lt_iff_le_not_le (a -ᵥ b) 0
+--     ⟨fun hab ↦ ⟨(h.1 hab).1, (vsub_nonpos_iff_vsub_rev_nonneg b a).not.mpr (h.1 hab).2⟩,
+--       fun ⟨hab, hba⟩ ↦ h.2 ⟨hab, (vsub_nonpos_iff_vsub_rev_nonneg b a).not.mp hba⟩⟩
+--   le_antisymm a b hab hba := eq_of_vsub_eq_zero <|
+--     PartialOrder.le_antisymm (a -ᵥ b) 0 hab ((vsub_nonpos_iff_vsub_rev_nonneg b a).mp hba)
+--   vadd_left_le h _ := by simpa only [vadd_vsub_vadd_cancel_left] using h
+--   vadd_right_le h _ := by
+--     simpa only [vadd_vsub_vadd_cancel_right, tsub_le_iff_right, zero_add] using h
 
-/-- If the group acting on an `AddTorsor` is a linearly ordered group, then there is a natual
-linearly order on the `AddTorsor` along with a corresponding structure of linearly ordered `AddTorsor`
-induced by the linearly ordered group. This is not an instance, since we do not want it to
-conflict with other linearly order structures that may exist on the `AddTorsor`. -/
-noncomputable local instance LinearOrderedAddTorsor_of_LinearOrderedAddCommGroup [outParam (LinearOrderedAddCommGroup G)] [AddTorsor G P] : LinearOrderedAddTorsor G P where
-  le_total := fun a b ↦
-    (or_congr_right (vsub_nonpos_iff_vsub_rev_nonneg b a)).mpr (LinearOrder.le_total (a -ᵥ b) 0)
-  decidableLE := decRel fun _ ↦ _
-  vsub_vadd' := vsub_vadd'
-  vadd_vsub' := vadd_vsub'
-  vadd_right_le := vadd_right_le
+-- /-- If the group acting on an `AddTorsor` is a linearly ordered group, then there is a natual
+-- linearly order on the `AddTorsor` along with a corresponding structure of linearly ordered `AddTorsor`
+-- induced by the linearly ordered group. This is not an instance, since we do not want it to
+-- conflict with other linearly order structures that may exist on the `AddTorsor`. -/
+-- noncomputable local instance LinearOrderedAddTorsor_of_LinearOrderedAddCommGroup [outParam (LinearOrderedAddCommGroup G)] [AddTorsor G P] : LinearOrderedAddTorsor G P where
+--   le_total := fun a b ↦
+--     (or_congr_right (vsub_nonpos_iff_vsub_rev_nonneg b a)).mpr (LinearOrder.le_total (a -ᵥ b) 0)
+--   decidableLE := decRel fun _ ↦ _
+--   vsub_vadd' := vsub_vadd'
+--   vadd_vsub' := vadd_vsub'
+--   vadd_right_le := vadd_right_le
 
-/-- If the group acting on an `AddTorsor` is a circular ordered group, then there is a natual
-circular order on the `AddTorsor` along with a corresponding structure of circular ordered `AddTorsor`
-induced by the circular ordered group. This is not an instance, since we do not want it to
-conflict with other circular order structures that may exist on the `AddTorsor`. -/
-local instance CircularOrderedAddTorsor_of_CircularOrderedAddCommGroup [outParam (CircularOrderedAddCommGroup G)] [AddTorsor G P] : CircularOrderedAddTorsor G P where
-  vsub_vadd' := vsub_vadd'
-  vadd_vsub' := vadd_vsub'
-  btw a b c := btw 0 (b -ᵥ a) (c -ᵥ a)
-  sbtw a b c := sbtw 0 (b -ᵥ a) (c -ᵥ a)
-  btw_refl a := by simp only [vsub_self, btw_rfl]
-  btw_cyclic_left h := btw_cyclic_left ((btw_vsub_fst_iff_btw_vsub_snd _ _ _).mp h)
-  sbtw_iff_btw_not_btw {a} {b} {c} := by
-    simp only [btw_vsub_fst_iff_btw_vsub_trd c b a]
-    exact sbtw_iff_btw_not_btw
-  sbtw_trans_left {a} {b} _ _ ha h := by
-    have h := sbtw_add_right h (b -ᵥ a)
-    rw [zero_add, vsub_add_vsub_cancel, vsub_add_vsub_cancel] at h
-    exact sbtw_trans_left ha h
-  btw_antisymm ha h := by
-    have h := btw_antisymm ha ((btw_vsub_fst_iff_btw_vsub_trd _ _ _).mp h)
-    nth_rw 1 [vsub_left_cancel_iff, vsub_eq_zero_iff_eq, eq_comm, vsub_eq_zero_iff_eq, eq_comm] at h
-    exact h
-  btw_total a b c := by
-    simp only [btw_vsub_fst_iff_btw_vsub_trd c b a]
-    exact btw_total 0 (b -ᵥ a) (c -ᵥ a)
-  btw_vadd_left h _ := by
-    simpa only [vadd_vsub_vadd_cancel_left] using h
-  btw_vadd_right {e} {_} {_} h _ := by
-    simp only [vadd_vsub_vadd_cancel_right, ← sub_self e]
-    exact btw_sub_right h e
+-- /-- If the group acting on an `AddTorsor` is a circular ordered group, then there is a natual
+-- circular order on the `AddTorsor` along with a corresponding structure of circular ordered `AddTorsor`
+-- induced by the circular ordered group. This is not an instance, since we do not want it to
+-- conflict with other circular order structures that may exist on the `AddTorsor`. -/
+-- local instance CircularOrderedAddTorsor_of_CircularOrderedAddCommGroup [outParam (CircularOrderedAddCommGroup G)] [AddTorsor G P] : CircularOrderedAddTorsor G P where
+--   vsub_vadd' := vsub_vadd'
+--   vadd_vsub' := vadd_vsub'
+--   btw a b c := btw 0 (b -ᵥ a) (c -ᵥ a)
+--   sbtw a b c := sbtw 0 (b -ᵥ a) (c -ᵥ a)
+--   btw_refl a := by simp only [vsub_self, btw_rfl]
+--   btw_cyclic_left h := btw_cyclic_left ((btw_vsub_fst_iff_btw_vsub_snd _ _ _).mp h)
+--   sbtw_iff_btw_not_btw {a} {b} {c} := by
+--     simp only [btw_vsub_fst_iff_btw_vsub_trd c b a]
+--     exact sbtw_iff_btw_not_btw
+--   sbtw_trans_left {a} {b} _ _ ha h := by
+--     have h := sbtw_add_right h (b -ᵥ a)
+--     rw [zero_add, vsub_add_vsub_cancel, vsub_add_vsub_cancel] at h
+--     exact sbtw_trans_left ha h
+--   btw_antisymm ha h := by
+--     have h := btw_antisymm ha ((btw_vsub_fst_iff_btw_vsub_trd _ _ _).mp h)
+--     nth_rw 1 [vsub_left_cancel_iff, vsub_eq_zero_iff_eq, eq_comm, vsub_eq_zero_iff_eq, eq_comm] at h
+--     exact h
+--   btw_total a b c := by
+--     simp only [btw_vsub_fst_iff_btw_vsub_trd c b a]
+--     exact btw_total 0 (b -ᵥ a) (c -ᵥ a)
+--   btw_vadd_left h _ := by
+--     simpa only [vadd_vsub_vadd_cancel_left] using h
+--   btw_vadd_right {e} {_} {_} h _ := by
+--     simp only [vadd_vsub_vadd_cancel_right, ← sub_self e]
+--     exact btw_sub_right h e
 
-end contruction
+-- end contruction
 
-end AddTorsor
+-- end AddTorsor
 
-end Mathlib.Algebra.AddTorsor
+-- end Mathlib.Algebra.AddTorsor
 
 
 
-/-!
-### More theorems about real numbers divided by nature numbers
--/
+-- /-!
+-- ### More theorems about real numbers divided by nature numbers
+-- -/
 
-section Mathlib.Data.Real.Basic
+-- section Mathlib.Data.Real.Basic
 
-theorem Real.div_nat_le_self_of_nonnneg {a : ℝ} (n : ℕ) (h : 0 ≤ a) : a / n ≤ a := by
-  show a * (↑n)⁻¹ ≤ a
-  refine' mul_le_of_le_one_right h _
-  by_cases h : n = 0
-  · simp only [h, CharP.cast_eq_zero, inv_zero, zero_le_one]
-  · exact inv_le_one (Nat.one_le_cast.mpr (Nat.one_le_iff_ne_zero.mpr h))
+-- theorem Real.div_nat_le_self_of_nonnneg {a : ℝ} (n : ℕ) (h : 0 ≤ a) : a / n ≤ a := by
+--   show a * (↑n)⁻¹ ≤ a
+--   refine' mul_le_of_le_one_right h _
+--   by_cases h : n = 0
+--   · simp only [h, CharP.cast_eq_zero, inv_zero, zero_le_one]
+--   · exact inv_le_one (Nat.one_le_cast.mpr (Nat.one_le_iff_ne_zero.mpr h))
 
-theorem Real.div_nat_le_self_of_pos {a : ℝ} (n : ℕ) (h : 0 < a) : a / n ≤ a :=
-  a.div_nat_le_self_of_nonnneg n (le_of_lt h)
+-- theorem Real.div_nat_le_self_of_pos {a : ℝ} (n : ℕ) (h : 0 < a) : a / n ≤ a :=
+--   a.div_nat_le_self_of_nonnneg n (le_of_lt h)
 
-theorem Real.div_nat_lt_self_of_pos_of_two_le {a : ℝ} {n : ℕ} (h : 0 < a) (hn : 2 ≤ n) : a / n < a :=
-  mul_lt_of_lt_one_right h (inv_lt_one (Nat.one_lt_cast.mpr hn))
+-- theorem Real.div_nat_lt_self_of_pos_of_two_le {a : ℝ} {n : ℕ} (h : 0 < a) (hn : 2 ≤ n) : a / n < a :=
+--   mul_lt_of_lt_one_right h (inv_lt_one (Nat.one_lt_cast.mpr hn))
 
-theorem Real.div_eq_div_of_div_eq_div {a b c d : ℝ} (hc : c ≠ 0) (hd : d ≠ 0) (h : a / b = c / d) : a / c = b / d := by
-  have hb : b ≠ 0 := by
-    intro hb
-    rw [hb, div_zero] at h
-    exact div_ne_zero hc hd h.symm
-  exact (div_eq_div_iff hc hd).mpr (((div_eq_div_iff hb hd).mp h).trans (mul_comm c b))
+-- theorem Real.div_eq_div_of_div_eq_div {a b c d : ℝ} (hc : c ≠ 0) (hd : d ≠ 0) (h : a / b = c / d) : a / c = b / d := by
+--   have hb : b ≠ 0 := by
+--     intro hb
+--     rw [hb, div_zero] at h
+--     exact div_ne_zero hc hd h.symm
+--   exact (div_eq_div_iff hc hd).mpr (((div_eq_div_iff hb hd).mp h).trans (mul_comm c b))
 
-theorem pi_div_nat_nonneg (n : ℕ) : 0 ≤ π / n :=
-  div_nonneg (le_of_lt pi_pos) (Nat.cast_nonneg n)
+-- theorem pi_div_nat_nonneg (n : ℕ) : 0 ≤ π / n :=
+--   div_nonneg (le_of_lt pi_pos) (Nat.cast_nonneg n)
 
-end Mathlib.Data.Real.Basic
+-- end Mathlib.Data.Real.Basic

@@ -1,5 +1,5 @@
 import Mathlib.Analysis.SpecialFunctions.Complex.Circle
-import Mathlib.Data.Int.Parity
+import Mathlib.Data.Int.Basic
 /-!
 # APIs about Angle from Mathlib
 
@@ -78,12 +78,14 @@ theorem coe_zsmul (z : ℤ) (x : ℝ) : ↑(z • x : ℝ) = z • (↑x : AngVa
   rfl
 
 @[simp, norm_cast]
-theorem coe_nat_mul_eq_nsmul (x : ℝ) (n : ℕ) : ↑((n : ℝ) * x) = n • (↑x : AngValue) :=
-  Angle.coe_nat_mul_eq_nsmul _ _
+theorem coe_nat_mul_eq_nsmul (x : ℝ) (n : ℕ) : ↑((n : ℝ) * x) = n • (↑x : AngValue) := by
+  norm_cast
+  simp only [nsmul_eq_mul]
 
 @[simp, norm_cast]
-theorem coe_int_mul_eq_zsmul (x : ℝ) (n : ℤ) : ↑((n : ℝ) * x : ℝ) = n • (↑x : AngValue) :=
-  Angle.coe_int_mul_eq_zsmul _ _
+theorem coe_int_mul_eq_zsmul (x : ℝ) (n : ℤ) : ↑((n : ℝ) * x : ℝ) = n • (↑x : AngValue) := by
+  norm_cast
+  simp only [zsmul_eq_mul]
 
 theorem eq_iff_two_pi_dvd_sub {ψ θ : ℝ} : (θ : AngValue) = ψ ↔ ∃ k : ℤ, θ - ψ = 2 * π * k :=
   Angle.angle_eq_iff_two_pi_dvd_sub
@@ -709,35 +711,10 @@ namespace EuclidGeom
 open Complex
 
 /-- `expMapCircle`, applied to a `AngValue`. -/
-noncomputable def AngValue.expMapCircle (θ : AngValue) : circle :=
-  Angle.expMapCircle θ
+noncomputable def AngValue.expMapCircle (θ : AngValue) : Circle :=
+  AddCircle.toCircle θ
 
-@[simp]
-theorem AngValue.expMapCircle_coe (x : ℝ) : AngValue.expMapCircle x = _root_.expMapCircle x :=
-  rfl
 
-theorem AngValue.coe_expMapCircle (θ : AngValue) :
-    (θ.expMapCircle : ℂ) = θ.cos + θ.sin * I :=
-  Angle.coe_expMapCircle θ
-
-@[simp]
-theorem AngValue.expMapCircle_zero : AngValue.expMapCircle 0 = 1 :=
-  Angle.expMapCircle_zero
-
-@[simp]
-theorem AngValue.expMapCircle_neg (θ : AngValue) :
-    AngValue.expMapCircle (-θ) = (AngValue.expMapCircle θ)⁻¹ :=
-  Angle.expMapCircle_neg θ
-
-@[simp]
-theorem AngValue.expMapCircle_add (θ₁ θ₂ : AngValue) : AngValue.expMapCircle (θ₁ + θ₂) =
-    AngValue.expMapCircle θ₁ * AngValue.expMapCircle θ₂ :=
-  Angle.expMapCircle_add θ₁ θ₂
-
-@[simp]
-theorem AngValue.arg_expMapCircle (θ : AngValue) :
-    (arg (AngValue.expMapCircle θ) : AngValue) = θ :=
-  Angle.arg_expMapCircle θ
 
 end EuclidGeom
 

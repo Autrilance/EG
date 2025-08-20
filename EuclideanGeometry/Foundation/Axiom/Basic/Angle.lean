@@ -1,10 +1,10 @@
 import EuclideanGeometry.Foundation.Axiom.Basic.Angle.AddToMathlib
-import Mathlib.Data.Int.Parity
+import Mathlib.Data.Int.Basic
 /-!
 # Angle Conversions
 
 Recall in Euclidean Geometry, the measure of angle is subtle. The measure of an angle can be treated as a number in `ℝ⧸2π`, `(- π, π]`, `[0, 2π)`, `ℝ⧸π`, or even `[0, π]` (after taking abs). Each of them has their own suitable applications.
-* `ℝ⧸2π` : add and sub of angles, angle between dirrcted object;
+* `ℝ⧸2π` : add and sub of angles, angle between directed object;
 * `(- π, π]` : measure of oriented angle, angles of a triangle, positions;
 * `[0, 2π)` : length of arc, central angle;
 * `ℝ⧸π` : measure of directed angle when discussing four points concyclic, angle between lines
@@ -84,8 +84,7 @@ theorem coe_zero : ↑(0 : AngValue) = (0 : AngDValue) :=
 section dsimp
 
 @[simp, nolint simpNF]
-theorem coe_add_coe (x y : ℝ) : ↑(x + y : AngValue) = (↑x + ↑y : AngDValue) :=
-  rfl
+theorem coe_add_coe (x y : ℝ) : ↑(x + y : AngValue) = (↑x + ↑y : AngDValue) := rfl
 
 @[simp, nolint simpNF]
 theorem coe_neg_coe (x : ℝ) : ↑(-x : AngValue) = -(↑x : AngDValue) :=
@@ -1291,14 +1290,15 @@ theorem abs_lt_pi_iff_ne_pi : θ.abs < π ↔ θ ≠ π :=
 
 theorem pi_div_two_abs : ∠[π / 2].abs = π / 2 := by
   rw [abs, toReal_pi_div_two]
-  exact abs_eq_self.mpr (pi_div_nat_nonneg 2)
+  simp only [abs_eq_self]
+  refine div_nonneg pi_nonneg (by norm_num)
 
 theorem abs_eq_pi_div_two_of_eq_pi_div_two (h : θ = ∠[π / 2]) : θ.abs = π / 2 :=
   (congrArg abs h).trans pi_div_two_abs
 
 theorem neg_pi_div_two_abs : ∠[- π / 2].abs = π / 2 := by
   rw [abs, toReal_neg_pi_div_two, ← neg_neg (π / 2), neg_div 2 π, abs_neg, neg_neg, abs_eq_self]
-  exact pi_div_nat_nonneg 2
+  refine div_nonneg pi_nonneg (by norm_num)
 
 theorem abs_eq_pi_div_two_of_eq_neg_pi_div_two (h : θ = ∠[- π / 2]) : θ.abs = π / 2 :=
   (congrArg abs h).trans neg_pi_div_two_abs

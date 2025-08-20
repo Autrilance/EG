@@ -44,3 +44,4 @@ Prove that For any point $D$ on the base $BC$, the sum of the the distance of $D
     sorry
 
 end Shan_Problem_1_6
+#check EuclideanGeometry.oangle
