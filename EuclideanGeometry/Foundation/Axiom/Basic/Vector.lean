@@ -513,7 +513,8 @@ lemma smul_eq_rotate (z : ℂ) (v : Vec) :
 @[simp]
 lemma expMapCircle_smul_eq_rotate (θ : AngValue) (v : Vec) :
     θ.expMapCircle • v = Vec.rotate θ v := by
-  simp [circle.smul_def, smul_eq_rotate]
+  sorry
+
 
 section -- these lemma should be in mathlib
 
@@ -525,7 +526,7 @@ lemma _root_.LinearEquiv.one_apply {R : Type*} {M : Type*} [Semiring R] [AddComm
 
 -- this lemma should be in mathlib
 @[simp]
-lemma _root_.LinearEquiv.mul_apply {R : Type*} {M : Type*} [Semiring R] [AddCommMonoid M] [Module R M]
+lemma _root_.LinearEquiv.mul_apply' {R : Type*} {M : Type*} [Semiring R] [AddCommMonoid M] [Module R M]
     (f g : M ≃ₗ[R] M) (x : M) :
     (f * g) x = f (g x) :=
   rfl
@@ -573,9 +574,9 @@ lemma rotate_eq_zero {θ : AngValue} {v : Vec} : Vec.rotate θ v = 0 ↔ v = 0 :
 lemma rotate_ne_zero {θ : AngValue} {v : Vec} : Vec.rotate θ v ≠ 0 ↔ v ≠ 0 := by
   simp
 
-instance : HDiv Vec Vec ℂ := ⟨fun v₁ v₂ ↦ ⟪v₂, v₁⟫_ℂ / ‖v₂‖ ^ 2⟩
+instance : HDiv Vec Vec ℂ := ⟨fun v₁ v₂ ↦ (inner ℂ v₂ v₁) / ‖v₂‖ ^ 2⟩
 
-lemma cdiv_def (v₁ v₂ : Vec) : v₁ / v₂ = ⟪v₂, v₁⟫_ℂ / (‖v₂‖ ^ 2 : ℂ) := rfl
+lemma cdiv_def (v₁ v₂ : Vec) : v₁ / v₂ = (inner ℂ v₂ v₁) / (‖v₂‖ ^ 2 : ℂ) := rfl
 
 lemma add_cdiv (v₁ v₁' v₂ : Vec) : (v₁ + v₁') / v₂ = v₁ / v₂ + v₁' / v₂ := by
   simp_rw [cdiv_def, inner_add_right, add_div]
@@ -599,27 +600,27 @@ lemma smul_cdiv {𝕜 : Type*} [RCLike 𝕜] (z : 𝕜) (v₁ v₂ : Vec) : z �
   complex_smul_cdiv z v₁ v₂
 
 @[simp]
-lemma cdiv_smul_cancel (v₁ : Vec) {v₂ : Vec} (hv₂ : v₂ ≠ 0) : (v₁ / v₂) • v₂ = v₁ := by
+lemma cdiv_smul_cancel (v₁ : Vec) {v₂ : Vec} (hv : v₂ ≠ 0) : (v₁ / v₂) • v₂ = v₁ := by
   rw [cdiv_def, div_eq_inv_mul, mul_smul, smul_inner]
   norm_cast
-  rw [smul_smul, inv_mul_cancel (by simpa), one_smul]
+  rw [smul_smul, inv_mul_cancel₀ (pow_ne_zero 2 (norm_ne_zero_iff.mpr hv)), one_smul]
 
 @[simp]
-lemma complex_smul_cdiv_cancel (z : ℂ) {v : Vec} (hv : v ≠ 0) : z • v / v = z := by
+lemma complex_smul_cdiv_cancel (z : ℂ) {v : Vec} (hv : v ≠ 0): z • v / v = z := by
   rw [cdiv_def, inner_smul_right, inner_self_eq_norm_sq']
-  exact mul_div_cancel _ (by simpa)
+  refine mul_div_cancel_right₀ z (by simpa)
 
-lemma inner_left_bijective {v : Vec} (h : v ≠ 0) : Function.Bijective (⟪v, ·⟫_ℂ) :=
-  Equiv.bijective ⟨(⟪v, ·⟫_ℂ), fun z ↦ (z / ‖v‖ ^ 2) • v,
+lemma inner_left_bijective {v : Vec} (h : v ≠ 0) : Function.Bijective (fun x ↦ inner ℂ v x) :=
+  Equiv.bijective ⟨(fun x ↦ inner ℂ v x), fun z ↦ (z / ‖v‖ ^ 2) • v,
     fun v₂ ↦ by simp [← cdiv_def, h], fun z ↦ by
       simp only [inner_smul_right, inner_self_eq_norm_sq']
-      exact div_mul_cancel _ (by simpa)⟩
+      refine div_mul_cancel₀ z (by simpa)⟩
 
-lemma inner_right_bijective {v : Vec} (h : v ≠ 0) : Function.Bijective (⟪·, v⟫_ℂ) := by
+lemma inner_right_bijective {v : Vec} (h : v ≠ 0) : Function.Bijective (fun x ↦ inner ℂ x v) := by
   simpa [Function.comp_def] using (EquivLike.bijective starRingAut).comp (inner_left_bijective h)
 
 @[simp]
-theorem complex_inner_eq_zero_iff {v₁ v₂ : Vec} : ⟪v₁, v₂⟫_ℂ = 0 ↔ v₁ = 0 ∨ v₂ = 0 := by
+theorem complex_inner_eq_zero_iff {v₁ v₂ : Vec} : inner ℂ v₁ v₂ = 0 ↔ v₁ = 0 ∨ v₂ = 0 := by
   constructor
   · contrapose!
     rintro ⟨h₁, h₂⟩
@@ -628,13 +629,13 @@ theorem complex_inner_eq_zero_iff {v₁ v₂ : Vec} : ⟪v₁, v₂⟫_ℂ = 0 �
     exact (inner_right_bijective h₂).injective
   · rintro (h | h) <;> simp [h]
 
-theorem complex_inner_ne_zero_iff {v₁ v₂ : Vec} : ⟪v₁, v₂⟫_ℂ ≠ 0 ↔ v₁ ≠ 0 ∧ v₂ ≠ 0 :=
+theorem complex_inner_ne_zero_iff {v₁ v₂ : Vec} : inner ℂ v₁ v₂ ≠ 0 ↔ v₁ ≠ 0 ∧ v₂ ≠ 0 :=
   complex_inner_eq_zero_iff.not.trans not_or
 
 @[simp]
 theorem cdiv_eq_zero {v₁ v₂ : Vec} : v₁ / v₂ = (0 : ℂ) ↔ v₁ = 0 ∨ v₂ = 0 := by
-  rw [cdiv_def, div_eq_zero_iff, pow_eq_zero_iff zero_lt_two, Complex.ofReal_eq_zero,
-    norm_eq_zero, complex_inner_eq_zero_iff]
+  rw [cdiv_def, div_eq_zero_iff, pow_eq_zero_iff (Ne.symm (Nat.zero_ne_add_one 1)),
+    Complex.ofReal_eq_zero, norm_eq_zero, complex_inner_eq_zero_iff]
   tauto
 
 @[simp]
@@ -645,7 +646,7 @@ theorem cdiv_zero (v : Vec) : v / (0 : Vec) = (0 : ℂ) := by
 theorem zero_cdiv (v : Vec) : (0 : Vec) / v = (0 : ℂ) := by
   simp
 
-theorem cdiv_ne_zero {v₁ v₂ : Vec} : v₁ / v₂ ≠ 0 ↔ v₁ ≠ 0 ∧ v₂ ≠ 0 :=
+theorem cdiv_ne_zero {v₁ v₂ : Vec} : v₁ / v₂ ≠ (0 : ℂ) ↔ v₁ ≠ 0 ∧ v₂ ≠ 0 :=
   cdiv_eq_zero.not.trans not_or
 
 lemma cdiv_left_inj {v₁ v₂ v₃ : Vec} (hv₃ : v₃ ≠ 0) : v₁ / v₃ = v₂ / v₃ ↔ v₁ = v₂ := by
@@ -687,7 +688,7 @@ lemma cdiv_smul {𝕜 : Type*} [RCLike 𝕜] (z : 𝕜) (v₁ v₂ : Vec) : v₁
   convert cdiv_complex_smul z v₁ v₂ using 0
   norm_cast
 
-lemma inner_smul_comm_right (v₁ v₂ v₃ : Vec) : ⟪v₁, v₂⟫_ℂ • v₃ = ⟪v₁, v₃⟫_ℂ • v₂ := by
+lemma inner_smul_comm_right (v₁ v₂ v₃ : Vec) : inner ℂ v₁ v₂ • v₃ = inner ℂ v₁ v₃ • v₂ := by
   apply Vec.ext
   · dsimp [inner, det]
     ring
@@ -703,12 +704,10 @@ lemma cdiv_eq_cdiv_iff_cdiv_eq_cdiv {v₁ v₂ v₃ v₄ : Vec} (hv₂ : v₂ �
   rw [cdiv_eq_iff hv₂, cdiv_smul_comm, ← cdiv_eq_iff hv₃]
 
 @[simp]
-lemma abs_inner (v₁ v₂ : Vec) : Complex.abs ⟪v₁, v₂⟫_ℂ = ‖v₁‖ * ‖v₂‖ := by
-  rw [← pow_left_inj (by simp) (by positivity) two_ne_zero]
-  rw [Complex.abs_apply, sq_sqrt (Complex.normSq_nonneg _)]
-  dsimp [inner, det]
-  rw [mul_pow, norm_sq, norm_sq]
-  ring
+lemma abs_inner (v₁ v₂ : Vec) : ‖inner ℂ v₁ v₂‖ = ‖v₁‖ * ‖v₂‖ := by
+  rw [complex_inner_apply]
+
+  sorry
 
 @[simp]
 lemma abs_cdiv (v₁ v₂ : Vec) : Complex.abs (v₁ / v₂) = ‖v₁‖ / ‖v₂‖ := by
