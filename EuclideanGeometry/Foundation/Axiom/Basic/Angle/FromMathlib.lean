@@ -645,6 +645,9 @@ theorem sign_eq_of_continuousOn {α : Type*} [TopologicalSpace α] {f : α → A
     (hx : x ∈ s) (hy : y ∈ s) : (f y).sign = (f x).sign :=
   Angle.sign_eq_of_continuousOn hc hf hs hx hy
 
+theorem coe_toCircle (θ : AngValue) : (θ.toCircle : ℂ) = θ.cos + θ.sin * Complex.I := by
+  rw [Real.Angle.coe_toCircle θ]; rfl
+
 end AngValue
 
 end EuclidGeom
@@ -709,11 +712,6 @@ section Mathlib.Analysis.SpecialFunctions.Complex.Circle
 namespace EuclidGeom
 
 open Complex
-
-/-- `expMapCircle`, applied to a `AngValue`. -/
-noncomputable def AngValue.expMapCircle (θ : AngValue) : Circle :=
-  AddCircle.toCircle θ
-
 
 
 end EuclidGeom

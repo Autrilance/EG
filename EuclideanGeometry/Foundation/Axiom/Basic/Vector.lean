@@ -3,7 +3,8 @@ import Mathlib.Analysis.InnerProductSpace.ProdL2
 import Mathlib.Analysis.Normed.Module.Ray
 import Mathlib.LinearAlgebra.Projectivization.Basic
 import Mathlib.Algebra.Module.TransferInstance
-import Mathlib.Analysis.InnerProductSpace.Basic
+-- import Mathlib.Analysis.InnerProductSpace.Basic
+-- import Mathlib.Analysis.SpecialFunctions.Complex.Circle
 -- import Mathlib.Algebra.Group.TransferInstance
 -- import Mathlib.Algebra.GroupWithZero.TransferInstance
 -- import Mathlib.Algebra.Ring.TransferInstance
@@ -200,7 +201,7 @@ lemma toComplex_norm_eq_norm (a : 𝕜) : ‖toComplex a‖ = ‖a‖ :=
   (@pow_left_inj₀ ℝ _ _ _ ‖toComplex a‖ ‖a‖ 2 _ (norm_nonneg _)
   (norm_nonneg _) (by norm_num)).mp (by simp [norm_sq_eq_def])
 
-instance RCLike.normedSpaceComplex : NormedSpace 𝕜 ℂ where
+instance normedSpaceComplex : NormedSpace 𝕜 ℂ where
   smul x z := x * z
   one_smul := by simp [smul_def]
   mul_smul := by simp [smul_def, mul_assoc]
@@ -366,7 +367,7 @@ lemma smul_snd' (s : ℝ) (v : Vec) : (s • v).snd = s * v.snd + 0 * v.fst := b
   rfl
 
 lemma smul_def (s : ℝ) (v : Vec) : s • v = mk (s * v.fst) (s * v.snd) := by
-  simp [smul_def', complex_smul_def]
+  simp [smul_def']
 
 @[simp]
 lemma smul_mk (s : ℝ) (x y : ℝ) : s • mk x y = mk (s * x) (s * y) := by
@@ -485,14 +486,14 @@ lemma smul_bijective {z : ℂ} (hz : z ≠ 0) : Function.Bijective (z • · : V
   (scaleRotateEquiv (.mk0 z hz)).bijective
 
 def rotate (θ : AngValue) : Vec ≃ₗ[ℂ] Vec :=
-  scaleRotateEquiv (Circle.toUnits θ.expMapCircle)
+  scaleRotateEquiv (Circle.toUnits θ.toCircle)
 
 @[simp]
 lemma rotate_mk (θ : AngValue) (x y : ℝ) :
     rotate θ ⟨x, y⟩ = ⟨θ.cos * x - θ.sin * y, θ.cos * y + θ.sin * x⟩ := by
   dsimp [rotate]
-
-  sorry
+  rw [AngValue.coe_toCircle θ]
+  simp
 
 @[simp]
 lemma rotate_fst (θ : AngValue) (v : Vec) :
@@ -510,25 +511,12 @@ lemma smul_eq_rotate (z : ℂ) (v : Vec) :
   · simp [mul_sub, ← mul_assoc]
   · simp [mul_add, ← mul_assoc]
 
-@[simp]
-lemma expMapCircle_smul_eq_rotate (θ : AngValue) (v : Vec) :
-    θ.expMapCircle • v = Vec.rotate θ v := by
-  sorry
-
-
 section -- these lemma should be in mathlib
 
 @[simp]
 lemma _root_.LinearEquiv.one_apply {R : Type*} {M : Type*} [Semiring R] [AddCommMonoid M] [Module R M]
     (x : M) :
     (1 : M ≃ₗ[R] M) x = x :=
-  rfl
-
--- this lemma should be in mathlib
-@[simp]
-lemma _root_.LinearEquiv.mul_apply' {R : Type*} {M : Type*} [Semiring R] [AddCommMonoid M] [Module R M]
-    (f g : M ≃ₗ[R] M) (x : M) :
-    (f * g) x = f (g x) :=
   rfl
 
 end
@@ -706,13 +694,13 @@ lemma cdiv_eq_cdiv_iff_cdiv_eq_cdiv {v₁ v₂ v₃ v₄ : Vec} (hv₂ : v₂ �
 @[simp]
 lemma abs_inner (v₁ v₂ : Vec) : ‖inner ℂ v₁ v₂‖ = ‖v₁‖ * ‖v₂‖ := by
   rw [complex_inner_apply]
-
   sorry
 
 @[simp]
-lemma abs_cdiv (v₁ v₂ : Vec) : Complex.abs (v₁ / v₂) = ‖v₁‖ / ‖v₂‖ := by
+lemma abs_cdiv (v₁ v₂ : Vec) : ‖v₁ / v₂‖ = ‖v₁‖ / ‖v₂‖ := by
   by_cases hv₂ : v₂ = 0; · simp [hv₂]
-  rw [cdiv_def, map_div₀, abs_inner, map_pow, Complex.abs_ofReal, abs_norm]
+  rw [cdiv_def]
+  rw [Complex.norm_div, abs_inner, norm_pow, Complex.norm_real, norm_norm]
   rw [pow_two, mul_div_mul_left _ _ (norm_ne_zero_iff.mpr hv₂)]
 
 -- should be in mathlib
@@ -720,7 +708,7 @@ theorem _root_.RCLike.ofReal_eq_complex_coe : RCLike.ofReal = ((↑) : ℝ → �
   rfl
 
 lemma real_inner_of_sameRay {v₁ v₂ : Vec} (h : SameRay ℝ v₁ v₂) :
-    ⟪v₁, v₂⟫_ℝ = ‖v₁‖ * ‖v₂‖ := by
+    inner ℝ v₁ v₂ = ‖v₁‖ * ‖v₂‖ := by
   obtain (rfl | rfl | ⟨r₁, r₂, hr₁, hr₂, h⟩) := h
   · simp
   · simp
@@ -740,7 +728,7 @@ lemma det_of_sameRay {v₁ v₂ : Vec} (h : SameRay ℝ v₁ v₂) :
     rw [map_smul, map_smul, det_self, smul_zero, smul_zero]
 
 lemma complex_inner_of_sameRay {v₁ v₂ : Vec} (h : SameRay ℝ v₁ v₂) :
-    ⟪v₁, v₂⟫_ℂ = ‖v₁‖ * ‖v₂‖ := by
+    inner ℂ v₁ v₂ = ‖v₁‖ * ‖v₂‖ := by
   ext
   · simp [real_inner_of_sameRay h]
   · simp [det_of_sameRay h]
@@ -755,7 +743,7 @@ lemma cdiv_of_sameRay {v₁ v₂ : Vec} (h : SameRay ℝ v₁ v₂) :
 @[simp]
 lemma arg_cdiv (θ : AngValue) {v : Vec} (hv : v ≠ 0) :
     (Vec.rotate θ v / v).arg = θ := by
-  rw [← expMapCircle_smul_eq_rotate, circle.smul_def, smul_cdiv]
+  rw [← toCircle_smul_eq_rotate, circle.smul_def, smul_cdiv]
   simp [hv]
 
 end Vec
@@ -1081,14 +1069,13 @@ lemma rotate_angle_eq_div_norm_smul (v₁ v₂ : VecND) :
 lemma sameDir_rotate_angle_left (v₁ v₂ : VecND) :
     SameDir (VecND.rotate (angle v₁ v₂) v₁) v₂ := by
   simp [rotate, VecND.map]
-  positivity
 
 lemma sameDir_rotate_angle_right (v₁ v₂ : VecND) :
     SameDir v₁ (VecND.rotate (angle v₂ v₁) v₂) :=
   (sameDir_rotate_angle_left v₂ v₁).symm
 
 theorem norm_mul_cos (v₁ v₂ : VecND) :
-    ‖v₁‖ * ‖v₂‖ * (VecND.angle v₁ v₂).cos = ⟪v₁.1, v₂.1⟫_ℝ := by
+    ‖v₁‖ * ‖v₂‖ * (VecND.angle v₁ v₂).cos = inner ℝ v₁.1 v₂.1 := by
   rw [angle, vsub_def, toMul_ofMul, coe_cdiv, AngValue.cos_coe,
     Complex.cos_arg (Vec.cdiv_ne_zero.mpr ⟨VecND.ne_zero _, VecND.ne_zero _⟩), Vec.abs_cdiv,
     Vec.cdiv_def, Vec.complex_inner_apply, Vec.real_inner_apply, Vec.det_apply]
@@ -1107,11 +1094,11 @@ theorem norm_mul_sin (v₁ v₂ : VecND) :
   field_simp
   ring
 
-theorem norm_smul_expMapCircle (v₁ v₂ : VecND) :
-    (‖v₁‖ * ‖v₂‖) • ((VecND.angle v₁ v₂).expMapCircle : ℂ) = ⟪v₁.1, v₂.1⟫_ℂ := by
+theorem norm_smul_toCircle (v₁ v₂ : VecND) :
+    (‖v₁‖ * ‖v₂‖) • ((VecND.angle v₁ v₂).toCircle : ℂ) = inner ℂ v₁.1 v₂.1 := by
   ext
-  · simp [AngValue.coe_expMapCircle, VecND.norm_mul_cos]
-  · simp [AngValue.coe_expMapCircle, VecND.norm_mul_sin]
+  · simp [AngValue.coe_toCircle, VecND.norm_mul_cos]
+  · simp [AngValue.coe_toCircle, VecND.norm_mul_sin]
 
 end VecND
 
@@ -1121,8 +1108,6 @@ abbrev VecND.toDir (v : VecND) : Dir := ⟦v⟧
 
 @[simp]
 lemma Dir.quotient_mk_eq (v : VecND) : ⟦v⟧ = v.toDir := rfl
-
-attribute [pp_dot] VecND.toDir
 
 instance : Coe VecND Dir := ⟨VecND.toDir⟩
 
@@ -1288,11 +1273,9 @@ lemma normalize_apply_ne_zero {M : Type*} [AddCommGroup M] [Module ℝ M]
     d.normalize f ≠ 0 := d.ind fun v ↦ by
   simp [not_or, map_ne_zero_iff f hf]
 
-@[pp_dot]
 def unitVecND (d : Dir) : VecND :=
   ⟨Dir.normalize LinearMap.id d, normalize_apply_ne_zero _ (fun _ _ ↦ id) _⟩
 
-@[pp_dot]
 abbrev unitVec (d : Dir) : Vec :=
   d.unitVecND
 
@@ -1392,15 +1375,15 @@ theorem angle_unitVecND (d₁ d₂ : Dir) : VecND.angle d₁.unitVecND d₂.unit
   simp
 
 @[simp]
-theorem inner_unitVec (d₁ d₂ : Dir) : ⟪d₁.unitVec, d₂.unitVec⟫_ℝ = (d₂ -ᵥ d₁).cos := by
+theorem inner_unitVec (d₁ d₂ : Dir) : inner ℝ d₁.unitVec d₂.unitVec = (d₂ -ᵥ d₁).cos := by
   simp [← VecND.norm_mul_cos]
 
 @[simp]
 theorem det_unitVec (d₁ d₂ : Dir) : Vec.det d₁.unitVec d₂.unitVec = (d₂ -ᵥ d₁).sin := by
   simp [← VecND.norm_mul_sin]
 
-theorem complex_inner_unitVec (d₁ d₂ : Dir) : ⟪d₁.unitVec, d₂.unitVec⟫_ℂ = (d₂ -ᵥ d₁).expMapCircle := by
-  simp [← VecND.norm_smul_expMapCircle]
+theorem complex_inner_unitVec (d₁ d₂ : Dir) : inner ℂ d₁.unitVec d₂.unitVec = (d₂ -ᵥ d₁).toCircle := by
+  simp [← VecND.norm_smul_toCircle]
 
 end Dir
 
@@ -1411,10 +1394,8 @@ def Proj := Quotient <| Setoid.correspondence (RayVector.Setoid ℝ Vec) ⟨proj
   obtain ⟨x, hx, h⟩ := VecND.SameDir.ofSameRay h
   exact ⟨.mk0 x hx.ne', h.symm⟩⟩
 
-@[pp_dot]
 def Dir.toProj : Dir → Proj := Quotient.mk _
 
-@[pp_dot]
 abbrev VecND.toProj (v : VecND) : Proj := v.toDir.toProj
 
 @[simp]
@@ -1510,10 +1491,9 @@ theorem Vec.det_eq_zero_iff_eq_smul_right {u v : Vec} : Vec.det u v = 0 ↔ v = 
   · intro e
     by_cases h : v = 0; · exact .inl h
     right
-    have h : v.1 ≠ 0 ∨ v.2 ≠ 0
-    · contrapose! h
+    have h : v.1 ≠ 0 ∨ v.2 ≠ 0 := by
+      contrapose! h
       apply Vec.ext <;> simp [h]
-    push_neg at h
     obtain (h | h) := h
     · use v.1⁻¹ * u.1
       rw [mul_smul, eq_inv_smul_iff₀ h]
@@ -1652,7 +1632,6 @@ instance : AddTorsor AngDValue Proj where
 instance instCircularOrderedAddTorsor : CircularOrderedAddTorsor AngDValue Proj :=
   AddTorsor.CircularOrderedAddTorsor_of_CircularOrderedAddCommGroup AngDValue Proj
 
-@[pp_dot]
 def perp (p : Proj) : Proj := ∡[π / 2] +ᵥ p
 
 @[simp]
