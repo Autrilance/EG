@@ -354,7 +354,7 @@ theorem sin_neg_of_toReal_neg (h : θ.toReal < 0) : sin θ < 0 :=
   θ.sin_toReal.symm.trans_lt (sin_neg_of_neg_of_neg_pi_lt h θ.neg_pi_lt_toReal)
 
 theorem sin_nonpos_of_toReal_nonpos (h : θ.toReal ≤ 0) : sin θ ≤ 0 :=
-  θ.sin_toReal.symm.trans_le (sin_nonpos_of_nonnpos_of_neg_pi_le h (le_of_lt θ.neg_pi_lt_toReal))
+  θ.sin_toReal.symm.trans_le (Real.sin_nonpos_of_nonpos_of_neg_pi_le h (le_of_lt θ.neg_pi_lt_toReal))
 
 theorem cos_pos_of_neg_pi_div_two_lt_of_lt_pi_div_two (hn : - π / 2 < θ.toReal) (h : θ.toReal < π / 2) : 0 < cos θ :=
   θ.cos_toReal.trans_gt (cos_pos_of_mem_Ioo ⟨(neg_div' 2 π).trans_lt hn, h⟩)
@@ -563,7 +563,8 @@ theorem btw_div_right {a b c : G} (h : btw a b c) (g : G) : btw (a / g) (b / g) 
 
 @[to_additive (attr := simp)]
 theorem btw_div_right_iff {a b c g : G} : btw (a / g) (b / g) (c / g) ↔ btw a b c := by
-  sorry
+  simp only [div_eq_mul_inv] at *
+  exact btw_mul_right_iff
 
 @[to_additive]
 theorem sbtw_div_right {a b c : G} (h : sbtw a b c) (g : G) : sbtw (a / g) (b / g) (c / g) := by
@@ -572,7 +573,10 @@ theorem sbtw_div_right {a b c : G} (h : sbtw a b c) (g : G) : sbtw (a / g) (b / 
 
 @[to_additive (attr := simp)]
 theorem sbtw_div_right_iff {a b c g : G} : sbtw (a / g) (b / g) (c / g) ↔ sbtw a b c :=
-  sorry
+  ⟨fun h ↦ by
+    simp only [div_eq_mul_inv] at h
+    exact sbtw_mul_right_iff.mp h,
+    fun h ↦ sbtw_div_right h g⟩
 
 namespace QuotientAddGroup
 
@@ -631,7 +635,7 @@ theorem smul_left_le_iff {g : G} {a b : P} : g • a ≤ g • b ↔ a ≤ b := 
 
 @[to_additive (attr := simp)]
 theorem smul_left_lt_iff {g : G} {a b : P} : g • a < g • b ↔ a < b := by
-  simp only [lt_iff_le_not_le, smul_left_le_iff]
+  simp only [lt_iff_le_not_ge, smul_left_le_iff]
 
 @[to_additive]
 theorem smul_left_lt {a b : P} (h : a < b) (g : G) : g • a < g • b := smul_left_lt_iff.mpr h

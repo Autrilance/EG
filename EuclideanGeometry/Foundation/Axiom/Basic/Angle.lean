@@ -20,8 +20,6 @@ namespace EuclidGeom
 
 open AngValue Classical Real
 
-attribute [pp_dot] AngValue.toReal
-
 def AngDValue := AddCircle π
 
 namespace AngDValue
@@ -33,7 +31,7 @@ instance : Inhabited AngDValue :=
   inferInstanceAs (Inhabited (AddCircle π))
 
 instance instCircularOrderedAddCommGroup : CircularOrderedAddCommGroup AngDValue :=
-  haveI hp : Fact (0 < π) := ⟨pi_pos⟩
+  haveI _hp : Fact (0 < π) := ⟨pi_pos⟩
   QuotientAddGroup.instCircularOrderedAddCommGroup ℝ
 
 @[coe]
@@ -132,9 +130,7 @@ theorem coe_zsmul (z : ℤ) (x : AngValue) : ↑(z • x : AngValue) = z • (�
   rfl
 
 theorem eq_iff_pi_dvd_sub {ψ θ : ℝ} : (θ : AngDValue) = ψ ↔ ∃ k : ℤ, θ - ψ = π * k := by
-  simp only [QuotientAddGroup.eq, AddSubgroup.zmultiples_eq_closure,
-    AddSubgroup.mem_closure_singleton, zsmul_eq_mul', (sub_eq_neg_add _ _).symm, eq_comm]
-  -- Porting note: added `rw`, `simp [Angle.coe, QuotientAddGroup.eq]` doesn't fire otherwise
+  simp only [eq_comm]
   rw [AngDValue.coe_def, AngDValue.coe_def, QuotientAddGroup.eq]
   simp only [AddSubgroup.zmultiples_eq_closure,
     AddSubgroup.mem_closure_singleton, zsmul_eq_mul', (sub_eq_neg_add _ _).symm, eq_comm]
@@ -146,7 +142,8 @@ theorem coe_pi : ↑(π : ℝ) = (0 : AngDValue) :=
 @[simp]
 theorem coe_neg_pi_div_two : ((- π / 2 : ℝ) : AngDValue) = ↑(π / 2 : ℝ) := by
   refine' eq_iff_pi_dvd_sub.mpr ⟨- 1, _⟩
-  rw [sub_eq_add_neg, ← neg_div, add_halves', Int.cast_neg, Int.cast_one, mul_neg, mul_one]
+  rw [sub_eq_add_neg, ← neg_div]
+  rw [add_halves, Int.cast_neg, Int.cast_one, mul_neg, mul_one]
 
 @[simp]
 theorem neg_coe_pi_div_two : -((π / 2 : ℝ) : AngDValue) = ↑(π / 2 : ℝ) := by
@@ -205,10 +202,11 @@ end AngValue
 
 protected abbrev AngDValue.lift {α : Sort*} (f : AngValue → α) (hf : ∀ θ, f (θ + π) = f θ) : AngDValue → α :=
   Quotient.lift (fun v : ℝ ↦ f v) fun (v₁ v₂ : ℝ) h ↦ (by
-    replace h : (v₁ : AngDValue) = (v₂ : AngDValue)
-    · exact Quotient.sound h
-    obtain (h | h) := coe_eq_coe_iff.mp h <;>
-      simp only [h, hf])
+    have h' : (v₁ : AngDValue) = (v₂ : AngDValue) := Quotient.sound h
+    obtain (h1 | h2) := coe_eq_coe_iff.mp h'
+    · simp only [h1]
+    · simp only [h2, hf]
+  )
 
 
 
@@ -354,15 +352,12 @@ section pos_neg_isND
 -- `Or just check Real.Angle.sign to write more api's, IsPos IsNeg is more similar to human language than sign`
 
 /-- An angle is positive if it is strictly between `0` and `π`. -/
-@[pp_dot]
 def IsPos (θ : AngValue) : Prop := sbtw 0 θ π
 
 /-- An angle is negative if it is strictly between `- π` and `0`. -/
-@[pp_dot]
 def IsNeg (θ : AngValue) : Prop := sbtw ∠[π] θ 0
 
 /-- An angle is non-degenerate if it is not `0` or `π`. -/
-@[pp_dot]
 structure IsND (θ : AngValue) : Prop where
   ne_zero : θ ≠ 0
   ne_pi : θ ≠ π
@@ -727,15 +722,12 @@ end pos_neg_isND
 section acute_obtuse_right
 
 /-- An angle is acute if it is strictly between `- π / 2` and `π / 2`. -/
-@[pp_dot]
 def IsAcu (θ : AngValue) : Prop := sbtw ∠[- π / 2] θ ∠[π / 2]
 
 /-- An angle is obtuse if it is strictly between `π / 2` and `- π / 2`. -/
-@[pp_dot]
 def IsObt (θ : AngValue) : Prop := sbtw ∠[π / 2] θ ∠[- π / 2]
 
 /-- An angle is right if it is `- π / 2` or `π / 2`. -/
-@[pp_dot]
 def IsRt (θ : AngValue) : Prop := θ = ∠[- π / 2] ∨ θ = ∠[π / 2]
 
 section special_value
@@ -1160,7 +1152,8 @@ theorem double_coe_coe_eq_coe_mul_two (x : ℝ) : ∡[x].Double = ∠[x * 2] := 
   rfl
 
 theorem real_div_two_double (x : ℝ) : ∡[x / 2].Double = x := by
-  rw [double_coe_coe_eq_coe_mul_two, div_mul_cancel x two_ne_zero]
+  rw [double_coe_coe_eq_coe_mul_two]
+  exact congrArg _ (div_mul_cancel_of_invertible x 2)
 
 theorem pi_div_two_double : ∡[π / 2].Double = π := real_div_two_double π
 
@@ -1228,7 +1221,7 @@ theorem neg_pi_lt_abs : - π < θ.abs :=
   LT.lt.trans_le (by linarith [pi_pos]) θ.abs_nonneg
 
 theorem coe_abs_eq_abs {x : ℝ} (hn : - π < x) (h : x ≤ π) : ∠[x].abs = |x| :=
-  congrArg Abs.abs (toReal_coe_eq_self hn h)
+  congrArg _ (toReal_coe_eq_self hn h)
 
 theorem coe_abs_eq_abs_of_abs_le_pi {x : ℝ} (h : |x| ≤ π) : ∠[x].abs = |x| :=
   if hp : x = - π then by
@@ -1238,7 +1231,7 @@ theorem coe_abs_eq_abs_of_abs_le_pi {x : ℝ} (h : |x| ≤ π) : ∠[x].abs = |x
 
 theorem coe_abs_le_abs (x : ℝ) : ∠[x].abs ≤ |x| :=
   if h : |x| ≤ π then (coe_abs_eq_abs_of_abs_le_pi h).le
-  else (∠[x].abs_le_pi).trans (le_of_not_le h)
+  else (∠[x].abs_le_pi).trans (le_of_not_ge h)
 
 theorem abs_min {x : ℝ} (h : θ = ∠[x]) : θ.abs ≤ |x| := by
   rw [h]
@@ -1272,7 +1265,7 @@ theorem abs_eq_zero_iff_eq_zero : θ.abs = 0 ↔ θ = 0 :=
 theorem abs_ne_zero_iff_ne_zero : θ.abs ≠ 0 ↔ θ ≠ 0 := abs_eq_zero_iff_eq_zero.not
 
 theorem abs_pos_iff_ne_zero : 0 < θ.abs ↔ θ ≠ 0 :=
-  ((θ.abs_nonneg).gt_iff_ne).trans abs_ne_zero_iff_ne_zero
+  ((θ.abs_nonneg).lt_iff_ne).trans $ ne_comm.trans abs_ne_zero_iff_ne_zero
 
 theorem pi_abs : (π : AngValue).abs = π := by
   rw [abs, toReal_pi, abs_eq_self.mpr (le_of_lt Real.pi_pos)]
