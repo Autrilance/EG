@@ -262,7 +262,7 @@ theorem eq_coe_of_toReal_eq {x : ℝ} (h : θ.toReal = x) : θ = ∠[x] :=
 theorem neg_pi_le_toReal : - π ≤ θ.toReal := le_of_lt θ.neg_pi_lt_toReal
 
 instance instCircularOrderedAddCommGroup : CircularOrderedAddCommGroup AngValue :=
-  haveI hp : Fact (0 < 2 * π) := ⟨two_pi_pos⟩
+  haveI _ : Fact (0 < 2 * π) := ⟨two_pi_pos⟩
   QuotientAddGroup.instCircularOrderedAddCommGroup ℝ
 
 end
@@ -516,7 +516,7 @@ theorem isPos_iff : θ.IsPos ↔ (0 < θ.toReal ∧ (θ.toReal < π)) := ⟨
   fun h ↦ isPos_of_toReal_pos_of_ne_pi h.1 (toReal_eq_pi_iff.not.mp (ne_of_lt h.2))⟩
 
 theorem not_isPos_iff : ¬ θ.IsPos ↔ (θ.toReal ≤ 0 ∨ θ.toReal = π) :=
-  (θ.isPos_iff).not.trans (by simp only [not_and_or, not_lt, ge_iff_le, (θ.toReal_le_pi).ge_iff_eq])
+  (θ.isPos_iff).not.trans (by simp only [not_and_or, not_lt, (θ.toReal_le_pi).ge_iff_eq])
 
 theorem isNeg_iff : θ.IsNeg ↔ (θ.toReal < 0) :=
   ⟨toReal_neg_of_isNeg, isNeg_of_toReal_pos⟩
@@ -1437,13 +1437,15 @@ section norm
 
 /-- The absolute value of an angle is equal to its norm. -/
 theorem abs_eq_norm : θ.abs = ‖θ‖ := by
-  apply le_antisymm
-  · refine' le_csInf ⟨θ.abs, θ.toReal, θ.coe_toReal, rfl⟩ (fun a h ↦ _)
-    rcases h with ⟨_, h, hn⟩
-    exact (abs_min h.symm).trans_eq hn
-  · refine' csInf_le ⟨0, fun a h ↦ _⟩ ⟨θ.toReal, θ.coe_toReal, rfl⟩
-    rcases h with ⟨x, _, h⟩
-    exact (norm_nonneg x).trans_eq h
+  unfold abs
+  rw [← (@AddCircle.norm_coe_eq_abs_iff (2 * π) θ.toReal (by
+    refine mul_ne_zero_iff.mpr ⟨(by norm_cast), Real.pi_ne_zero⟩)).mpr (by
+    rw [abs_of_nonneg (Left.mul_nonneg (by norm_cast) pi_nonneg)]
+    simp only [ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, mul_div_cancel_left₀]
+    exact abs_toReal_le_pi θ)]
+  congr
+  refine Angle.toReal_inj.mp
+    (Angle.toReal_coe_eq_self_iff.mpr neg_pi_lt_toReal_le_pi)
 
 @[simp]
 theorem abs_neg : (- θ).abs = θ.abs := by rw [abs_eq_norm, abs_eq_norm, norm_neg]
@@ -1483,22 +1485,27 @@ theorem sub_half_eq_half : θ - θ.half = θ.half :=
 
 @[simp]
 theorem half_toReal : θ.half.toReal = θ.toReal / 2 :=
-  toReal_coe_eq_self (by linarith [θ.neg_pi_lt_toReal, pi_pos]) (by linarith [θ.toReal_le_pi, pi_pos])
+  toReal_coe_eq_self (by linarith [θ.neg_pi_lt_toReal, pi_pos])
+    (by linarith [θ.toReal_le_pi, pi_pos])
 
 theorem half_toReal_le_two_inv_mul_pi : θ.half.toReal ≤ π / 2 :=
-  (θ.half_toReal).trans_le ((div_le_div_right (by norm_num)).mpr θ.toReal_le_pi)
+  (θ.half_toReal).trans_le ((div_le_div_iff_of_pos_right (by norm_cast)).mpr
+  (toReal_le_pi θ))
 
 theorem half_toReal_lt_two_inv_mul_pi_of_ne_pi (h : θ ≠ π) : θ.half.toReal < π / 2 :=
-  (θ.half_toReal).trans_lt ((div_lt_div_right (by norm_num)).mpr (toReal_lt_pi_of_ne_pi h))
+  (θ.half_toReal).trans_lt ((div_lt_div_iff_of_pos_right (by norm_cast)).mpr
+  (toReal_lt_pi_of_ne_pi h))
 
 theorem neg_two_inv_mul_pi_lt_half_toReal : - π / 2 < θ.half.toReal :=
-  ((div_lt_div_right (by norm_num)).mpr θ.neg_pi_lt_toReal).trans_eq (θ.half_toReal).symm
+  ((div_lt_div_iff_of_pos_right (by norm_num)).mpr θ.neg_pi_lt_toReal).trans_eq
+  (θ.half_toReal).symm
 
 theorem half_toReal_lt_pi : θ.half.toReal < π :=
   (θ.half_toReal_le_two_inv_mul_pi).trans_lt (by linarith [pi_pos])
 
 theorem eq_two_mul_coe_of_half_toReal_eq {x : ℝ} (h : θ.half.toReal = x) : θ = ∠[2 * x] := by
-  rw [← h, half_toReal, mul_div_cancel' θ.toReal two_ne_zero, θ.coe_toReal]
+  rw [← h, half_toReal]
+  refine eq_coe_of_toReal_eq (by ring)
 
 theorem half_inj {α β : AngValue} (h : α.half = β.half) : α = β :=
   toReal_inj.mp ((div_left_inj' (by norm_num)).mp <|
@@ -1535,8 +1542,8 @@ theorem half_eq_pi_iff_eq_pi : θ.half = ∠[π / 2] ↔ θ = π :=
   ⟨eq_pi_of_half_eq_pi, fun h ↦ (half_congr.mpr h).trans pi_half⟩
 
 theorem half_pi_div_nat (n : ℕ) : ∠[π / n].half = ∠[π / (n * 2)] :=
-  (coe_half ((neg_lt_zero.2 pi_pos).trans_le (pi_div_nat_nonneg n))
-    (div_nat_le_self_of_pos n pi_pos)).trans (by field_simp)
+  (coe_half ((neg_lt_zero.2 pi_pos).trans_le (div_nonneg pi_nonneg (Nat.cast_nonneg' n)))
+    (div_nat_le_self_of_nonnneg pi_nonneg n)).trans (by field_simp)
 
 theorem pi_div_two_half : ∠[π / 2].half = ∠[π / 4] :=
   (half_pi_div_nat 2).trans (by norm_num)
@@ -1547,7 +1554,8 @@ theorem pi_div_three_half : ∠[π / 3].half = ∠[π / 6] :=
 theorem half_neg_pi_div_nat {n : ℕ} (h : 2 ≤ n) : ∠[- π / n].half = ∠[- π / (n * 2)] := by
   rw [neg_div]
   exact (coe_half (neg_lt_neg (div_nat_lt_self_of_pos_of_two_le pi_pos h))
-    ((neg_nonpos.mpr (pi_div_nat_nonneg n)).trans (le_of_lt pi_pos))).trans (by field_simp)
+    ((neg_nonpos.mpr (div_nonneg pi_nonneg (Nat.cast_nonneg' n))).trans
+    (le_of_lt pi_pos))).trans (by field_simp)
 
 theorem neg_pi_div_two_half : ∠[- π / 2].half = ∠[- π / 4] :=
   (half_neg_pi_div_nat (le_of_eq rfl)).trans (by norm_num)
@@ -1566,7 +1574,8 @@ theorem half_isPos_of_isPos (h : θ.IsPos) : θ.half.IsPos := by
 
 theorem half_isNeg_iff_isNeg : θ.half.IsNeg ↔ θ.IsNeg := by
   refine' isNeg_iff.trans (Iff.trans _ isNeg_iff.symm)
-  nth_rw 1 [half_toReal, ← zero_div (2 : ℝ), div_lt_div_right (by norm_num)]
+  nth_rw 1 [half_toReal, ← zero_div (2 : ℝ)]
+  refine div_lt_div_iff_of_pos_right (by norm_cast)
 
 end pos_neg
 
@@ -1648,7 +1657,7 @@ end sum_to_product
 section abs
 
 theorem half_abs : θ.half.abs = θ.abs / 2 :=
-  (congrArg Abs.abs θ.half_toReal).trans <| (abs_mul θ.toReal 2⁻¹).trans <|
+  (congrArg _root_.abs θ.half_toReal).trans <| (abs_mul θ.toReal 2⁻¹).trans <|
     congrArg (HMul.hMul θ.abs) (abs_of_pos (by norm_num))
 
 theorem half_abs_le_pi_div_two : θ.half.abs ≤ π / 2 :=
