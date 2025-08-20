@@ -3,11 +3,12 @@ import Mathlib.Analysis.InnerProductSpace.ProdL2
 import Mathlib.Analysis.Normed.Module.Ray
 import Mathlib.LinearAlgebra.Projectivization.Basic
 import Mathlib.Algebra.Module.TransferInstance
-import Mathlib.Algebra.Group.TransferInstance
-import Mathlib.Algebra.GroupWithZero.TransferInstance
-import Mathlib.Algebra.Ring.TransferInstance
-import Mathlib.Algebra.Field.TransferInstance
-import Mathlib.Algebra.Algebra.TransferInstance
+import Mathlib.Analysis.InnerProductSpace.Basic
+-- import Mathlib.Algebra.Group.TransferInstance
+-- import Mathlib.Algebra.GroupWithZero.TransferInstance
+-- import Mathlib.Algebra.Ring.TransferInstance
+-- import Mathlib.Algebra.Field.TransferInstance
+-- import Mathlib.Algebra.Algebra.TransferInstance
 
 /-!
 # Standard Vector Space
@@ -119,15 +120,17 @@ end Projectivization
 section
 
 namespace InnerProductSpace.Core
-variable {𝕜 F : Type*} [IsROrC 𝕜] [AddCommGroup F] [Module 𝕜 F] [Core 𝕜 F]
+variable {𝕜 F : Type*} [RCLike 𝕜] [AddCommGroup F] [Module 𝕜 F] [Core 𝕜 F]
 
 local notation "⟪" x ", " y "⟫" => @inner 𝕜 F _ x y
 
 attribute [local instance] toInner'
 attribute [local instance] toNorm
 
+#check RCLike
+
 theorem inner_self_eq_norm_mul_norm' (x : F) : ⟪x, x⟫ = ‖x‖ * ‖x‖ := by
-  apply IsROrC.ext
+  apply RCLike.ext
   · simp [inner_self_eq_norm_mul_norm]
   · simp [inner_self_im]
 
@@ -137,12 +140,12 @@ theorem inner_self_eq_norm_sq' (x : F) : ⟪x, x⟫ = ‖x‖ ^ 2 := by
 end InnerProductSpace.Core
 
 section
-variable {𝕜 E : Type*} [IsROrC 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
+variable {𝕜 E : Type*} [RCLike 𝕜] [NormedAddCommGroup E] [InnerProductSpace 𝕜 E]
 
 local notation "⟪" x ", " y "⟫" => @inner 𝕜 E _ x y
 
 theorem inner_self_eq_norm_mul_norm' (x : E) : ⟪x, x⟫ = ‖x‖ * ‖x‖ := by
-  apply IsROrC.ext
+  apply RCLike.ext
   · simp [inner_self_eq_norm_mul_norm]
   · simp [inner_self_im]
 
@@ -151,8 +154,8 @@ theorem inner_self_eq_norm_sq' (x : E) : ⟪x, x⟫ = ‖x‖ ^ 2 := by
 
 end
 
-namespace IsROrC
-variable {𝕜 : Type*} [IsROrC 𝕜]
+namespace RCLike
+variable {𝕜 : Type*} [RCLike 𝕜]
 open scoped ComplexConjugate
 
 @[coe]
@@ -187,18 +190,17 @@ lemma normSq_toComplex (z : 𝕜) : Complex.normSq (z : ℂ) = normSq z := by si
 @[simp, norm_cast]
 lemma toComplex_inv (z : 𝕜) : ↑(z⁻¹) = (z : ℂ)⁻¹ := by ext <;> simp
 
-@[simp, norm_cast]
-lemma abs_toComplex (z : 𝕜) : Complex.abs (z : ℂ) = ‖z‖ := by
-  rw [← pow_left_inj (map_nonneg _ _) (norm_nonneg _) two_ne_zero,
-    Complex.sq_abs, Complex.normSq_apply, norm_sq_eq_def]
-  rfl
-
 instance : SMul 𝕜 ℂ where
   smul x z := x * z
 
 lemma smul_def (x : 𝕜) (z : ℂ) : x • z = x * z := rfl
 
-instance IsROrC.normedSpaceComplex : NormedSpace 𝕜 ℂ where
+@[simp]
+lemma toComplex_norm_eq_norm (a : 𝕜) : ‖toComplex a‖ = ‖a‖ :=
+  (@pow_left_inj₀ ℝ _ _ _ ‖toComplex a‖ ‖a‖ 2 _ (norm_nonneg _)
+  (norm_nonneg _) (by norm_num)).mp (by simp [norm_sq_eq_def])
+
+instance RCLike.normedSpaceComplex : NormedSpace 𝕜 ℂ where
   smul x z := x * z
   one_smul := by simp [smul_def]
   mul_smul := by simp [smul_def, mul_assoc]
@@ -208,10 +210,10 @@ instance IsROrC.normedSpaceComplex : NormedSpace 𝕜 ℂ where
   zero_smul := by simp [smul_def]
   norm_smul_le := by simp [smul_def]
 
-example : IsROrC.normedSpaceComplex = IsROrC.innerProductSpace.toNormedSpace := rfl
-example : IsROrC.normedSpaceComplex = IsROrC.innerProductSpace.toNormedSpace.complexToReal := rfl
+example : RCLike.normedSpaceComplex = RCLike.innerProductSpace.toNormedSpace := rfl
+example : RCLike.normedSpaceComplex = RCLike.innerProductSpace.toNormedSpace.complexToReal := rfl
 
-end IsROrC
+end RCLike
 
 noncomputable section
 
@@ -255,11 +257,11 @@ instance normedAddCommGroup : NormedAddCommGroup Vec where
 
 theorem norm_def (v : Vec) :
     ‖v‖ = sqrt (v.fst * v.fst + v.snd * v.snd) :=
-  norm_eq_sqrt_inner (𝕜 := ℝ) (equivWithLp v)
+  norm_eq_sqrt_re_inner (𝕜 := ℝ) (equivWithLp v)
 
 theorem norm_sq (v : Vec) :
     ‖v‖ ^ 2 = v.fst * v.fst + v.snd * v.snd :=
-  norm_sq_eq_inner (𝕜 := ℝ) (equivWithLp v)
+  norm_sq_eq_re_inner (𝕜 := ℝ) (equivWithLp v)
 
 -- cannot be a instace because this will create a diamond
 /-
@@ -271,7 +273,6 @@ instance normedAddCommGroupReal : InnerProductSpace ℝ Vec where
   add_left _ _ _ := inner_add_left (equivWithLp _) (equivWithLp _) (equivWithLp _)
   smul_left _ _ _ := inner_smul_left (equivWithLp _) (equivWithLp _) _
 -/
-attribute [pp_dot] fst snd
 
 lemma ext {v₁ v₂ : Vec} (h₁ : v₁.fst = v₂.fst) (h₂ : v₁.snd = v₂.snd) : v₁ = v₂ := by
   cases v₁
@@ -319,8 +320,8 @@ lemma neg_fst (v : Vec) : (-v).fst = -v.fst :=
 lemma neg_snd (v : Vec) : (-v).snd = -v.snd :=
   rfl
 
-open IsROrC in
-instance normedSpace {𝕜 : Type*} [IsROrC 𝕜] : NormedSpace 𝕜 Vec where
+open RCLike in
+instance normedSpace {𝕜 : Type*} [RCLike 𝕜] : NormedSpace 𝕜 Vec where
   smul z v := ⟨re z * v.fst - im z * v.snd, re z * v.snd + im z * v.fst⟩
   one_smul v := by simp [(· • ·)]
   mul_smul z w v := by dsimp [(· • ·)]; rw [mul_re, mul_im]; ring_nf
@@ -328,7 +329,7 @@ instance normedSpace {𝕜 : Type*} [IsROrC 𝕜] : NormedSpace 𝕜 Vec where
   smul_add z v₁ v₂ := by dsimp [(· • ·)]; apply ext <;> ring
   add_smul z w v := by dsimp [(· • ·)]; rw [map_add, map_add]; ring_nf
   zero_smul v := by simp [(· • ·)]
-  norm_smul_le z v := le_of_eq <| (sq_eq_sq (norm_nonneg _) (by positivity)).mp <| by
+  norm_smul_le z v := le_of_eq <| (sq_eq_sq₀ (norm_nonneg _) (by positivity)).mp <| by
     simp only [(· • ·), mul_pow, norm_sq, norm_sq_eq_def]
     ring
 
@@ -365,19 +366,19 @@ lemma smul_snd' (s : ℝ) (v : Vec) : (s • v).snd = s * v.snd + 0 * v.fst := b
   rfl
 
 lemma smul_def (s : ℝ) (v : Vec) : s • v = mk (s * v.fst) (s * v.snd) := by
-  dsimp [smul_def', complex_smul_def]; simp
+  simp [smul_def', complex_smul_def]
 
 @[simp]
 lemma smul_mk (s : ℝ) (x y : ℝ) : s • mk x y = mk (s * x) (s * y) := by
-  dsimp; simp
+  simp
 
 @[simp]
 lemma smul_fst (s : ℝ) (v : Vec) : (s • v).fst = s * v.fst := by
-  dsimp; simp
+  simp
 
 @[simp]
 lemma smul_snd (s : ℝ) (v : Vec) : (s • v).snd = s * v.snd := by
-  dsimp; simp
+  simp
 
 def det : Vec →ₗ[ℝ] Vec →ₗ[ℝ] ℝ where
   toFun v₁ := {
@@ -402,26 +403,28 @@ lemma det_skew (v₁ v₂ : Vec) : -det v₁ v₂ = det v₂ v₁ := by
 
 instance innerProductSpace' : InnerProductSpace ℝ Vec where
   inner v₁ v₂ := v₁.fst * v₂.fst + v₁.snd * v₂.snd
-  norm_sq_eq_inner v := by simp [norm_sq]
-  conj_symm v₁ v₂ := by simp [Complex.conj_ofReal, mul_comm]
+  norm_sq_eq_re_inner v := by simp [norm_sq]
+  conj_inner_symm v₁ v₂ := by simp [mul_comm]
   add_left v₁ v₂ v₃ := by dsimp; ring
-  smul_left v₁ v₂ z := by dsimp; simp only [zero_mul, sub_zero, add_zero, conj_trivial]; ring
+  smul_left v₁ v₂ z := by
+    simp
+    ring
 
 lemma real_inner_apply (v₁ v₂ : Vec) :
-    ⟪v₁, v₂⟫_ℝ = v₁.fst * v₂.fst + v₁.snd * v₂.snd :=
+  inner ℝ v₁ v₂ = v₁.fst * v₂.fst + v₁.snd * v₂.snd :=
   rfl
 
 instance innerProductSpace : InnerProductSpace ℂ Vec where
-  inner v₁ v₂ := ⟨⟪v₁, v₂⟫_ℝ, det v₁ v₂⟩
-  norm_sq_eq_inner v := by simp [norm_sq]; rfl
-  conj_symm v₁ v₂ := by
+  inner v₁ v₂ := ⟨inner ℝ v₁ v₂, det v₁ v₂⟩
+  norm_sq_eq_re_inner v := by simp [norm_sq]; rfl
+  conj_inner_symm v₁ v₂ := by
     ext
     · simp [real_inner_comm]
-    · simp [det_skew]
+    simp [det_skew]
   add_left v₁ v₂ v₃ := by
     ext
     · simp [inner_add_left]
-    · simp
+    simp
   smul_left v₁ v₂ z := by
     ext <;>
     · dsimp [inner, det]
@@ -431,23 +434,23 @@ example : innerProductSpace' = InnerProductSpace.complexToReal := rfl
 
 @[simp]
 lemma inner_re (v₁ v₂ : Vec) :
-    ⟪v₁, v₂⟫_ℂ.re = ⟪v₁, v₂⟫_ℝ :=
+  (inner ℂ v₁ v₂).re = inner ℝ v₁ v₂ :=
   rfl
 
 @[simp]
 lemma inner_im (v₁ v₂ : Vec) :
-    ⟪v₁, v₂⟫_ℂ.im = det v₁ v₂ :=
+  (inner ℂ v₁ v₂).im = det v₁ v₂ :=
   rfl
 
 lemma complex_inner_apply' (v₁ v₂ : Vec) :
-    ⟪v₁, v₂⟫_ℂ = ⟨⟪v₁, v₂⟫_ℝ, det v₁ v₂⟩ :=
+  inner ℂ v₁ v₂ = ⟨inner ℝ v₁ v₂, det v₁ v₂⟩ :=
   rfl
 
 lemma complex_inner_apply (v₁ v₂ : Vec) :
-    ⟪v₁, v₂⟫_ℂ = ⟪v₁, v₂⟫_ℝ + det v₁ v₂ * Complex.I := by
+  inner ℂ v₁ v₂ = inner ℝ v₁ v₂ + det v₁ v₂ * Complex.I := by
   simp [complex_inner_apply', Complex.mk_eq_add_mul_I]
 
-lemma smul_inner (v₁ v₂ : Vec) : ⟪v₁, v₂⟫_ℂ • v₁ = ‖v₁‖ ^ 2 • v₂ := by
+lemma smul_inner (v₁ v₂ : Vec) : inner ℂ v₁ v₂ • v₁ = ‖v₁‖ ^ 2 • v₂ := by
   simp only [complex_inner_apply', real_inner_apply, det_apply, complex_smul_def,
     norm_sq, smul_def]
   apply ext <;> ring
@@ -467,11 +470,11 @@ def scaleRotateEquiv : ℂˣ →* Vec ≃ₗ[ℂ] Vec where
     left_inv := fun v ↦ by simp [scaleRotate]
     right_inv := fun v ↦ by simp [scaleRotate] }
   map_one' := by
-    ext v
-    simpa using LinearMap.one_apply v
+    ext
+    simp
   map_mul' z w := by
-    ext v
-    simpa using LinearMap.mul_apply _ _ v
+    ext
+    simp
 
 @[simp]
 lemma scaleRotateEquiv_mk0 (z : ℂ) (hz : z ≠ 0) :
@@ -482,12 +485,14 @@ lemma smul_bijective {z : ℂ} (hz : z ≠ 0) : Function.Bijective (z • · : V
   (scaleRotateEquiv (.mk0 z hz)).bijective
 
 def rotate (θ : AngValue) : Vec ≃ₗ[ℂ] Vec :=
-  scaleRotateEquiv (circle.toUnits θ.expMapCircle)
+  scaleRotateEquiv (Circle.toUnits θ.expMapCircle)
 
 @[simp]
 lemma rotate_mk (θ : AngValue) (x y : ℝ) :
     rotate θ ⟨x, y⟩ = ⟨θ.cos * x - θ.sin * y, θ.cos * y + θ.sin * x⟩ := by
-  dsimp [rotate]; simp [AngValue.coe_expMapCircle]
+  dsimp [rotate]
+
+  sorry
 
 @[simp]
 lemma rotate_fst (θ : AngValue) (v : Vec) :
@@ -590,7 +595,7 @@ lemma complex_smul_cdiv (z : ℂ) (v₁ v₂ : Vec) : z • v₁ / v₂ = z * (v
 lemma mul_cdiv (z : ℂ) (v₁ v₂ : Vec) : z * (v₁ / v₂) = z • v₁ / v₂ :=
   (complex_smul_cdiv z v₁ v₂).symm
 
-lemma smul_cdiv {𝕜 : Type*} [IsROrC 𝕜] (z : 𝕜) (v₁ v₂ : Vec) : z • v₁ / v₂ = z • (v₁ / v₂) :=
+lemma smul_cdiv {𝕜 : Type*} [RCLike 𝕜] (z : 𝕜) (v₁ v₂ : Vec) : z • v₁ / v₂ = z • (v₁ / v₂) :=
   complex_smul_cdiv z v₁ v₂
 
 @[simp]
@@ -660,8 +665,8 @@ lemma cdiv_self {v : Vec} (hv : v ≠ 0) : v / v = (1 : ℂ) := by
   rw [cdiv_eq_one_iff_eq hv]
 
 @[simp]
-lemma smul_cdiv_cancel {𝕜 : Type*} [IsROrC 𝕜] (z : 𝕜) {v : Vec} (hv : v ≠ 0) : z • v / v = (z : ℂ) := by
-  rw [smul_cdiv, cdiv_self hv, IsROrC.smul_def, mul_one]
+lemma smul_cdiv_cancel {𝕜 : Type*} [RCLike 𝕜] (z : 𝕜) {v : Vec} (hv : v ≠ 0) : z • v / v = (z : ℂ) := by
+  rw [smul_cdiv, cdiv_self hv, RCLike.smul_def, mul_one]
 
 -- note: why simp do not know to use `smul_cdiv_cancel`?
 @[simp]
@@ -678,7 +683,7 @@ lemma cdiv_complex_smul (z : ℂ) (v₁ v₂ : Vec) : v₁ / z • v₂ = z⁻¹
   rw [← inv_cdiv v₂, ← mul_inv, mul_cdiv, inv_cdiv]
 
 @[simp]
-lemma cdiv_smul {𝕜 : Type*} [IsROrC 𝕜] (z : 𝕜) (v₁ v₂ : Vec) : v₁ / z • v₂ = z⁻¹ • (v₁ / v₂) := by
+lemma cdiv_smul {𝕜 : Type*} [RCLike 𝕜] (z : 𝕜) (v₁ v₂ : Vec) : v₁ / z • v₂ = z⁻¹ • (v₁ / v₂) := by
   convert cdiv_complex_smul z v₁ v₂ using 0
   norm_cast
 
@@ -712,7 +717,7 @@ lemma abs_cdiv (v₁ v₂ : Vec) : Complex.abs (v₁ / v₂) = ‖v₁‖ / ‖v
   rw [pow_two, mul_div_mul_left _ _ (norm_ne_zero_iff.mpr hv₂)]
 
 -- should be in mathlib
-theorem _root_.IsROrC.ofReal_eq_complex_coe : IsROrC.ofReal = ((↑) : ℝ → ℂ) :=
+theorem _root_.RCLike.ofReal_eq_complex_coe : RCLike.ofReal = ((↑) : ℝ → ℂ) :=
   rfl
 
 lemma real_inner_of_sameRay {v₁ v₂ : Vec} (h : SameRay ℝ v₁ v₂) :
