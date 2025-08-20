@@ -1,8 +1,13 @@
 import EuclideanGeometry.Foundation.Axiom.Basic.Angle
 import Mathlib.Analysis.InnerProductSpace.ProdL2
-import Mathlib.Analysis.NormedSpace.Ray
+import Mathlib.Analysis.Normed.Module.Ray
 import Mathlib.LinearAlgebra.Projectivization.Basic
-import Mathlib.Logic.Equiv.TransferInstance
+import Mathlib.Algebra.Module.TransferInstance
+import Mathlib.Algebra.Group.TransferInstance
+import Mathlib.Algebra.GroupWithZero.TransferInstance
+import Mathlib.Algebra.Ring.TransferInstance
+import Mathlib.Algebra.Field.TransferInstance
+import Mathlib.Algebra.Algebra.TransferInstance
 
 /-!
 # Standard Vector Space
@@ -28,7 +33,7 @@ section -- should be in mathlib
 variable {E : Type*} [SeminormedAddCommGroup E] [NormedSpace ℝ E]
 variable {M : Type*} [AddCommGroup M] [Module ℝ M]
 variable {x y : E}
-variable {F : Type*} [SMulHomClass F ℝ E M] (f : F)
+variable {F : Type*} [FunLike F E M] [MulActionHomClass F ℝ E M] (f : F)
 
 theorem SameRay.norm_smul_map_eq (h : SameRay ℝ x y) : ‖x‖ • f y = ‖y‖ • f x := by
   rcases h.exists_eq_smul with ⟨u, a, b, ha, hb, -, rfl, rfl⟩
@@ -42,7 +47,7 @@ section -- should be in mathlib
 variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℝ E]
 variable {M : Type*} [AddCommGroup M] [Module ℝ M]
 variable {x y : E}
-variable {F : Type*} [SMulHomClass F ℝ E M] (f : F)
+variable {F : Type*} [FunLike F E M] [MulActionHomClass F ℝ E M] (f : F)
 
 theorem SameRay.inv_norm_smul_map_eq (hx : x ≠ 0) (hy : y ≠ 0) (h : SameRay ℝ x y) :
     ‖x‖⁻¹ • f x = ‖y‖⁻¹ • f y := by
@@ -53,7 +58,7 @@ end
 
 namespace Module.Ray -- should be in mathlib
 
-variable {R : Type*} [StrictOrderedCommSemiring R]
+variable {R : Type*} [CommSemiring R] [PartialOrder R] [IsStrictOrderedRing R]
   {M₁ : Type*} [AddCommMonoid M₁] [Module R M₁]
   {M₂ : Type*} [AddCommMonoid M₂] [Module R M₂]
   {M₃ : Type*} [AddCommMonoid M₃] [Module R M₃]
